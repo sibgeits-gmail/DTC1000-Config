@@ -212,7 +212,7 @@ void MainWindow::on_btnConnect_clicked()
         return;
     }
     if (boxSelector->currentIndex() == 0){  // Serial
-        m_dtc->setModbusConnectionOptions("/dev/"+boxDevice->currentText(),
+        m_dtc->setModbusConnectionOptions("boxDevice->currentText(),
                                           static_cast<QSerialPort::BaudRate>(boxBaudRate->currentData().toInt()),
                                           static_cast<QSerialPort::Parity>(boxParity->currentData().toInt()),
                                           static_cast<QSerialPort::DataBits>(boxDataBits->currentData().toInt()),
