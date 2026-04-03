@@ -257,7 +257,7 @@ void MainWindow::on_btnSetRtu_clicked()
         m_dtc->readRegTcp(0x1000);
     }
 
-    m_dtc->setSerialConnectionOptions("/dev/"+boxDevice->currentText(),
+    m_dtc->setSerialConnectionOptions(boxDevice->currentText(),
                                       static_cast<QSerialPort::BaudRate>(boxBaudRate->currentData().toInt()),
                                       static_cast<QSerialPort::Parity>(boxParity->currentData().toInt()),
                                       static_cast<QSerialPort::DataBits>(boxDataBits->currentData().toInt()),
