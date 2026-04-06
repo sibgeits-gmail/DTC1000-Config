@@ -65,7 +65,6 @@ private:
     QModbusClient *m_modbus;    // Для отправки RTU
     QTcpSocket *m_socket;  // Для отправки RTU
     QSerialPort *m_serial;  // Для отправки ASCII
-    QTcpSocket *m_tcpSocket; // Для отправки ASCII
     QModbusReply *m_modbus_reply = nullptr;
 
     QByteArray rtu_crc(const QByteArray &payload);
