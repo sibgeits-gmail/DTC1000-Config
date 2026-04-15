@@ -94,9 +94,11 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 
     //-------------------------------Connect/Disconect---------------------------------------//
     btnConnect = new QPushButton("Connect", this);
+    btnAutoConnect = new QPushButton("Auto Connect", this);
     btnDisconnect = new QPushButton("Disconnect", this);
     auto *layoutH1 = new QHBoxLayout();
     layoutH1->addWidget(btnConnect);
+    layoutH1->addWidget(btnAutoConnect);
     layoutH1->addWidget(btnDisconnect);
     //-------------------------------Connect/Disconect---------------------------------------//
 
@@ -210,6 +212,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
             this, &MainWindow::onConnectionModeChanged);
     connect(btnConnect, &QPushButton::clicked,
             this, &MainWindow::btnConnect_clicked);
+    connect(btnAutoConnect, &QPushButton::clicked,
+            this, &MainWindow::btnAutoConnect_clicked);
     connect(btnDisconnect, &QPushButton::clicked,
             this, &MainWindow::btnDisconnect_clicked);
     connect(btnSetRTU, &QPushButton::clicked,
@@ -309,7 +313,6 @@ void MainWindow::handleCellChangedRight(int row, int column)    // Записа�
     int16_t dec_data = static_cast<int16_t>(itemVal->text().toShort(&ok, 10));
 
     if (ok) {
-        qDebug() << "Записываем в контроллер:" << dec_data << "Address:" << hex_addr;
         if (boxSelector->currentIndex() == 0){  // Serial
             m_dtc->writeReg(hex_addr, dec_data);
         }
@@ -329,7 +332,7 @@ void MainWindow::btnConnect_clicked()
     }
     m_dtc->slaveID = editAddr->text().toUShort();
     if (boxSelector->currentIndex() == 0){  // Serial
-        m_dtc->setModbusConnectionOptions(boxDevice->currentText(),
+        m_dtc->setSerialConnectionOptions(boxDevice->currentText(),
                                           static_cast<QSerialPort::BaudRate>(boxBaudRate->currentData().toInt()),
                                           static_cast<QSerialPort::Parity>(boxParity->currentData().toInt()),
                                           static_cast<QSerialPort::DataBits>(boxDataBits->currentData().toInt()),
@@ -337,10 +340,54 @@ void MainWindow::btnConnect_clicked()
         m_dtc->setModbusEnabled();
     }
     else if (boxSelector->currentIndex() == 1){  // TCP/IP
-        if (!m_dtc->isTcpEnabled())
-            m_dtc->setTcpEnabled(editIP->text(), editPort->text().toInt());
+        m_dtc->setTcpEnabled(editIP->text(), editPort->text().toInt());
     }
+}
 
+void MainWindow::btnAutoConnect_clicked()   // Перебор параметров serial
+{
+    m_dtc->slaveID = editAddr->text().toUShort();
+
+    QList<QSerialPort::BaudRate> baudrate = {QSerialPort::BaudRate::Baud38400,
+                                             QSerialPort::BaudRate::Baud19200,
+                                             QSerialPort::BaudRate::Baud9600,
+                                             QSerialPort::BaudRate::Baud4800,
+                                             QSerialPort::BaudRate::Baud2400};
+    QList<QSerialPort::Parity> parity = {QSerialPort::Parity::EvenParity,
+                                         QSerialPort::Parity::OddParity,
+                                         QSerialPort::Parity::NoParity};
+    QList<QSerialPort::DataBits> dataBits = {QSerialPort::DataBits::Data7,
+                                             QSerialPort::DataBits::Data8};
+    QList<QSerialPort::StopBits> stopBits = {QSerialPort::StopBits::OneStop,
+                                             QSerialPort::StopBits::TwoStop};
+
+    auto parityToString = [](QSerialPort::Parity parity){
+        switch (parity) {
+            case QSerialPort::NoParity:   return "None";
+            case QSerialPort::EvenParity: return "Even";
+            case QSerialPort::OddParity:  return "Odd";
+            default: return "Unknown parity";
+        }
+    };
+
+    for (auto baud : baudrate){
+        for (auto par : parity){
+            for (auto db : dataBits){
+                for (auto sb : stopBits){
+                    qDebug() << "Connecting: " << baud << ' ' << par << ' ' << db << ' ' << sb;
+                    m_dtc->setSerialConnectionOptions(boxDevice->currentText(), baud, par, db, sb);
+                    m_dtc->setModbusEnabled();
+                    if (m_dtc->isModbusEnabled()){
+                        editResponse->append("Baudrate: " + QString::number(baud) + '\n' +
+                                             "Parity: " + parityToString(par) + '\n' +
+                                             "Data Bits: " + QString::number(db) + '\n' +
+                                             "Stop Bits: " + QString::number(sb));
+                        return;
+                    }
+                }
+            }
+        }
+    }
 }
 
 void MainWindow::btnDisconnect_clicked()
@@ -365,14 +412,12 @@ void MainWindow::btnSetRtu_clicked() // Поменять формат сообщ
         m_dtc->setModbusDisabled();
     else if (m_dtc->isTcpEnabled())
         m_dtc->setTcpDisabled();
-
-    m_dtc->slaveID = editAddr->text().toUShort();
     m_dtc->setSerialConnectionOptions(boxDevice->currentText(),
                                       static_cast<QSerialPort::BaudRate>(boxBaudRate->currentData().toInt()),
                                       static_cast<QSerialPort::Parity>(boxParity->currentData().toInt()),
                                       static_cast<QSerialPort::DataBits>(boxDataBits->currentData().toInt()),
                                       static_cast<QSerialPort::StopBits>(boxStopBits->currentData().toInt()));
-    m_dtc->setSerialEnabled();
+    m_dtc->slaveID = editAddr->text().toUShort();
     m_dtc->changeToRtu();
 }
 

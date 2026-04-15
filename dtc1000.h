@@ -21,11 +21,6 @@ public:
     dtc1000(QObject *parent = nullptr);
     ~dtc1000() = default;
 
-    void setModbusConnectionOptions(const QString &portName,
-                                    QSerialPort::BaudRate baudRate,
-                                    QSerialPort::Parity parity,
-                                    QSerialPort::DataBits dataBits,
-                                    QSerialPort::StopBits stopBits);
 
     void setSerialConnectionOptions(const QString &portName,
                                     QSerialPort::BaudRate baudRate,
@@ -55,8 +50,6 @@ public:
     void changeToRtu();
 
     uint8_t slaveID;
-    /// добавить структуру с настройками подключения
-    ///
 
 
 private:
@@ -67,7 +60,6 @@ private slots:
     void onError(QAbstractSocket::SocketError err);
     void onReadyRead(); // Данные пришли в сокет
     void replyCaptured();
-    void asciiReplyCaptured();
 
 private:
     QModbusClient *m_modbus;    // Для отправки RTU

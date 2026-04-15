@@ -32,6 +32,7 @@ public:
 
 private:
     QPushButton* btnConnect;
+    QPushButton* btnAutoConnect;
     QPushButton* btnDisconnect;
     QPushButton* btnSetRTU;
     QPushButton* btnLoadDefault;
@@ -73,6 +74,7 @@ private slots:
     void handleCellChangedLeft(int row, int column);
     void handleCellChangedRight(int row, int column);
     void btnConnect_clicked();
+    void btnAutoConnect_clicked();
     void btnDisconnect_clicked();
     void btnSetRtu_clicked();
     void updateTable(const QString &addr, int val);

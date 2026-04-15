@@ -18,21 +18,6 @@ dtc1000::dtc1000(QObject *parent)
     connect(m_socket, QOverload<QAbstractSocket::SocketError>::of(&QTcpSocket::errorOccurred), this, &dtc1000::onError);
 }
 
-void dtc1000::setModbusConnectionOptions(const QString &portName,
-                                         QSerialPort::BaudRate baudRate,
-                                         QSerialPort::Parity parity,
-                                         QSerialPort::DataBits dataBits,
-                                         QSerialPort::StopBits stopBits)
-{
-    m_modbus->setConnectionParameter(QModbusDevice::SerialPortNameParameter, portName);
-    m_modbus->setConnectionParameter(QModbusDevice::SerialBaudRateParameter, baudRate);
-    m_modbus->setConnectionParameter(QModbusDevice::SerialParityParameter, parity);
-    m_modbus->setConnectionParameter(QModbusDevice::SerialDataBitsParameter, dataBits);
-    m_modbus->setConnectionParameter(QModbusDevice::SerialStopBitsParameter, stopBits);
-
-    m_modbus->setTimeout(2000);
-    m_modbus->setNumberOfRetries(2);
-}
 
 void dtc1000::setModbusEnabled()
 {
@@ -49,7 +34,7 @@ void dtc1000::setModbusEnabled()
     if (!m_modbus_reply) return;
     QEventLoop loop;
     connect(m_modbus_reply, &QModbusReply::finished, &loop, &QEventLoop::quit);
-    QTimer::singleShot(2000, &loop, &QEventLoop::quit);
+    QTimer::singleShot(200, &loop, &QEventLoop::quit);
     loop.exec();    // Дождаться ответа от устройства или таймаута
     if (m_modbus_reply->isFinished() && m_modbus_reply->error() == QModbusDevice::NoError) {
         m_tmr->start();
@@ -65,7 +50,8 @@ void dtc1000::setModbusEnabled()
 
 void dtc1000::setTcpEnabled(const QString &host, int port)
 {
-    m_socket->connectToHost(host, port);
+    if (!isTcpEnabled())
+        m_socket->connectToHost(host, port);
 }
 
 void dtc1000::setTcpDisabled()
@@ -261,35 +247,50 @@ void dtc1000::setSerialConnectionOptions(const QString &portName,
                                          QSerialPort::DataBits dataBits,
                                          QSerialPort::StopBits stopBits)
 {
-    m_serial->setPortName(portName);
+    m_serial->setPortName(portName);    // m_serial для ascii
     m_serial->setBaudRate(baudRate);
     m_serial->setDataBits(dataBits);
     m_serial->setParity(parity);
     m_serial->setStopBits(stopBits);
+
+    m_modbus->setConnectionParameter(QModbusDevice::SerialPortNameParameter, portName); // m_modbus для rtu
+    m_modbus->setConnectionParameter(QModbusDevice::SerialBaudRateParameter, baudRate);
+    m_modbus->setConnectionParameter(QModbusDevice::SerialParityParameter, parity);
+    m_modbus->setConnectionParameter(QModbusDevice::SerialDataBitsParameter, dataBits);
+    m_modbus->setConnectionParameter(QModbusDevice::SerialStopBitsParameter, stopBits);
+
+    m_modbus->setTimeout(2000);
+    m_modbus->setNumberOfRetries(2);
 }
 
 void dtc1000::changeToRtu() // Используем QSerialBus чтобы отправить ASCII сообщение
 {
-    QByteArray payload = QByteArray("01061072000176"); // Записать 1 в регистр 0х1072
-    payload.append("\r\n");
-    payload.prepend(':');
+    setSerialEnabled();
+    QByteArray payload = QByteArray(":01061072000176\r\n"); // Записать 1 в регистр 0х1072
     m_serial->write(payload);
-    qDebug() << QString(payload.toHex(' ').toUpper());
-    m_serial->waitForBytesWritten(1000);
-    connect(m_serial, &QSerialPort::readyRead, this, &dtc1000::asciiReplyCaptured);
-}
+    m_serial->waitForBytesWritten(200);
 
-void dtc1000::asciiReplyCaptured()  // Пришёл ответ на запись 1 в регистр 0х1072
-{
-    QByteArray data = m_serial->readAll();
+    QEventLoop loop;
+    QTimer timer;
+    timer.setSingleShot(true);
 
-    if (!data.isEmpty()){
-        qDebug() << QString(data);
-        if(data.contains("10720001"))   // Если пришёл ответ (в регистр 0х1072 записана 1)
-            setSerialDisabled();
+    connect(m_serial, &QSerialPort::readyRead, &loop, &QEventLoop::quit);
+    connect(&timer, &QTimer::timeout, &loop, &QEventLoop::quit);
+
+    timer.start(200);
+    loop.exec();
+
+    if (timer.isActive()){  // Если таймер ещё работает, значит уже пришёл ответ
+        QByteArray data = m_serial->readAll();
+        if (!data.isEmpty()){
+            if(data.contains("10720001"))   // Если пришёл ответ (в регистр 0х1072 записана 1)
+                setSerialDisabled();
             emit infoMessage("Установлен режим RTU");
+        }
+        else
+            setSerialDisabled();
     }
-    else
-        setSerialDisabled();    
+    else{
+        setSerialDisabled();
+    }
 }
-
