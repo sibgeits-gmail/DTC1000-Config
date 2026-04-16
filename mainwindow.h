@@ -37,8 +37,7 @@ private:
     QPushButton* btnSetRTU;
     QPushButton* btnLoadDefault;
 
-    QTableWidget* tableRegLeft;
-    QTableWidget* tableRegRight;
+    QTableWidget* tableReg;
 
     QLabel* modeLabel;
     QLabel* addrLabel;
@@ -67,12 +66,10 @@ private:
 private:
     dtc1000 *m_dtc = nullptr;
     QMap<QString, QPoint> map_table_1;
-    QMap<QString, QPoint> map_table_2;
     void updateSerialPorts();
 
 private slots:
-    void handleCellChangedLeft(int row, int column);
-    void handleCellChangedRight(int row, int column);
+    void handleCellChanged(int row, int column);
     void btnConnect_clicked();
     void btnAutoConnect_clicked();
     void btnDisconnect_clicked();
