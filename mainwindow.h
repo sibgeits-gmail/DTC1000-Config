@@ -18,7 +18,14 @@
 
 #include <QSerialPortInfo>
 
+#include <QFile>
+#include <QFileDialog>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonArray>
+
 #include "dtc1000.h"
+#include "addregdialog.h"
 
 
 
@@ -36,6 +43,10 @@ private:
     QPushButton* btnDisconnect;
     QPushButton* btnSetRTU;
     QPushButton* btnLoadDefault;
+    QPushButton* btnLoadConfig;
+    QPushButton* btnSaveConfig;
+    QPushButton* btnAddRow;
+    QPushButton* btnDelRow;
 
     QTableWidget* tableReg;
 
@@ -65,11 +76,16 @@ private:
 
 private:
     dtc1000 *m_dtc = nullptr;
-    QMap<QString, QPoint> map_table_1;
+    QMap<QString, QPoint> map_table_1;////////////delete
     void updateSerialPorts();
+    void updateRegisters();
 
 private slots:
-    void handleCellChanged(int row, int column);
+    void cellChanged(int row, int column);
+    void saveConfig();
+    void loadConfig();
+    void addRow();
+    void delRow();
     void btnConnect_clicked();
     void btnAutoConnect_clicked();
     void btnDisconnect_clicked();

@@ -114,12 +114,17 @@ void dtc1000::requestUpdate()   // Выбираем какие регистры 
 {
     if (m_modbus_reply == nullptr) {
         m_requestQueue.clear();
-        m_requestQueue.append(QModbusDataUnit(QModbusDataUnit::HoldingRegisters, 0x1000, 7));   // Начиная с 0х1000 прочитать 7 регистров
-        m_requestQueue.append(QModbusDataUnit(QModbusDataUnit::HoldingRegisters, 0x100F, 3));
-        m_requestQueue.append(QModbusDataUnit(QModbusDataUnit::HoldingRegisters, 0x1020, 4));
-        m_requestQueue.append(QModbusDataUnit(QModbusDataUnit::HoldingRegisters, 0x102A, 1));
-        m_requestQueue.append(QModbusDataUnit(QModbusDataUnit::HoldingRegisters, 0x1071, 6));
-
+        for (int i = 0; i < registers.count(); i++){
+            bool ok;
+            if (registers[i].size() == 4){   // Если в строке только адрес
+                int addr = registers[i].toInt(&ok, 16);
+                m_requestQueue.append(QModbusDataUnit(QModbusDataUnit::HoldingRegisters, addr, 1));
+            }
+            else if (registers[i].contains("bit")){
+                int addr = registers[i].sliced(0, 4).toInt(&ok, 16);
+                m_requestQueue.append(QModbusDataUnit(QModbusDataUnit::HoldingRegisters, addr, 1));
+            }
+        }
         processNextRequest();
     }
 }

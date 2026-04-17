@@ -50,6 +50,7 @@ public:
     void changeToRtu();
 
     uint8_t slaveID;
+    QList<QString> registers;
 
 
 private:
