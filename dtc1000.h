@@ -51,6 +51,7 @@ public:
 
     uint8_t slaveID;
     QList<QString> registers;
+    uint8_t rx_counter, tx_counter;
 
 
 private:

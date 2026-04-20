@@ -103,53 +103,12 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     //-------------------------------Connect/Disconect---------------------------------------//
 
 
-    //-------------------------------Set RTU/Load Default Settings---------------------------------------//
-    grpRtuLoad = new QGroupBox(this);
-    auto *layoutH2 = new QHBoxLayout();
-    btnSetRTU = new QPushButton("Set RTU Mode", this);
-    btnLoadDefault = new QPushButton("Load Default Settings", this);
-    layoutH2->addWidget(btnSetRTU);
-    layoutH2->addWidget(btnLoadDefault);
-    grpRtuLoad->setLayout(layoutH2);
-    //-------------------------------Set RTU/Load Default Settings---------------------------------------//
-
-
     //-------------------------------Register Table---------------------------------------//
     auto *layoutH4 = new QHBoxLayout();
     btnSaveConfig = new QPushButton("Save Config", this);
     btnLoadConfig = new QPushButton("Load Config", this);
     layoutH4->addWidget(btnSaveConfig);
     layoutH4->addWidget(btnLoadConfig);
-
-    // map_table_1["1000"] = QPoint(0, 2);
-    // map_table_1["1001"] = QPoint(1, 2);
-    // map_table_1["1002"] = QPoint(2, 2);
-    // map_table_1["1003"] = QPoint(3, 2);
-    // map_table_1["1004"] = QPoint(4, 2);
-    // map_table_1["1005"] = QPoint(5, 2);
-    // map_table_1["1006"] = QPoint(6, 2);
-    // map_table_1["100F"] = QPoint(7, 2);
-    // map_table_1["1010"] = QPoint(8, 2);
-    // map_table_1["1011"] = QPoint(9, 2);
-    // map_table_1["1020"] = QPoint(10, 2);
-    // map_table_1["1021"] = QPoint(11, 2);
-    // map_table_1["1023"] = QPoint(12, 2);
-    // //map_table_2["102A"] = QPoint(3, 2);       // Вручную указываются ячейки в обработчики для этого регистра (2 ячейки для 2ух битов выходов)
-    // map_table_1["1071"] = QPoint(15, 2);
-    // map_table_1["1072"] = QPoint(16, 2);
-    // map_table_1["1073"] = QPoint(17, 2);
-    // map_table_1["1074"] = QPoint(18, 2);
-    // map_table_1["1075"] = QPoint(19, 2);
-    // map_table_1["1076"] = QPoint(20, 2);
-
-    // QList<QString> registers = {"1000", "1001", "1002", "1003", "1004", "1005",
-    //                         "1006", "100F", "1010", "1011", "1020", "1021",
-    //                         "1023", "102A b5", "102A b6", "1071", "1072", "1073", "1074",
-    //                         "1075", "1076"};
-    // QList<QString> regNames = {"Изм. значение (PV)", "Уставка (SV)", "Верхний предел", "Нижний предел", "Тип датчика", "Метод рег.",
-    //                            "Метод упр. вых. 1", "Зона нечувствительности", "Гистерезис выхода 1", "Гистерезис выхода 2", "Режим раб. сигн. вых. 1", "Режим раб. сигн. вых. 2",
-    //                            "Метод упр. вых. 2", "Выход 2", "Выход 1", "Адрес Modbus", "Формат данных", "Скорость обмена", "Длина пакета данных",
-    //                            "Чётность", "Стоповые биты"};
 
     tableReg = new QTableWidget(this);
     tableReg->setColumnCount(3);
@@ -160,13 +119,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     tableReg->setColumnWidth(1, 200);
     tableReg->setColumnWidth(2, 80);
     tableReg->setMinimumHeight(350);
-
-    // for (int row = 0; row < registers.count(); row++){
-    //     tableReg->insertRow(row);
-    //     tableReg->setItem(row, 0, new QTableWidgetItem(registers[row]));
-    //     tableReg->item(row,0)->setTextAlignment(Qt::AlignCenter);
-    //     tableReg->setItem(row, 1, new QTableWidgetItem(regNames[row]));
-    // }
 
     //-------------------------------Register Table---------------------------------------//
 
@@ -202,7 +154,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     mainLayout->addWidget(modeLabel);
     mainLayout->addWidget(boxSelector);
     mainLayout->addLayout(layoutConnection);
-    mainLayout->addWidget(grpRtuLoad);
     mainLayout->addWidget(editResponse);
 
     mainLayout1->addLayout(mainLayout);
@@ -227,8 +178,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
             this, &MainWindow::btnAutoConnect_clicked);
     connect(btnDisconnect, &QPushButton::clicked,
             this, &MainWindow::btnDisconnect_clicked);
-    connect(btnSetRTU, &QPushButton::clicked,
-            this, &MainWindow::btnSetRtu_clicked);
     connect(tableReg, &QTableWidget::cellChanged,
             this, &MainWindow::cellChanged);
 
@@ -282,10 +231,9 @@ void MainWindow::updateTable(const QString &addr, int val)  //   Обновит�
     for (int i = 0; i < m_dtc->registers.size(); i++){  // Сначал проверить, есть ли регистр с выводом бита
         if (m_dtc->registers[i].contains(addr) && m_dtc->registers[i].contains("bit")){
             uint8_t bit = m_dtc->registers[i].right(1).toUInt();    // Номер бита, который нужно вывести прописан справа (102A bit5)
-            bit = (val >> bit) & 1;
             int row = i;
             if (!isEditing(tableReg, row, col))
-                tableReg->setItem(row, col, new QTableWidgetItem(QString::number(bit)));
+                tableReg->setItem(row, col, new QTableWidgetItem(QString::number((val >> bit) & 1)));
             done = true;
         }
     }
@@ -350,32 +298,28 @@ void MainWindow::saveConfig()   // Сохранить таблицу в json
 
 void MainWindow::loadConfig() {
     QString filePath = QFileDialog::getOpenFileName(this,
-                                                    "Сохранить конфигурацию",
+                                                    "Загрузить конфигурацию",
                                                     "",
                                                     "JSON файлы (*.json);;Все файлы (*)");
     if (filePath.isEmpty()) return; // Если пользователь нажал "Отмена"
     QFile file(filePath);
     if (!file.open(QIODevice::ReadOnly)) return;
 
-    QByteArray data = file.readAll();
+    QJsonDocument doc = QJsonDocument::fromJson(file.readAll());
     file.close();
-
-    QJsonDocument doc = QJsonDocument::fromJson(data);
-    if (!doc.isArray()) return;
+    if (doc.isNull() || !doc.isArray()) return;
 
     tableReg->blockSignals(true);
-
     QJsonArray rootArray = doc.array();
     tableReg->setRowCount(0); // Очищаем таблицу перед загрузкой
 
     for (int i = 0; i < rootArray.size(); ++i) {
         QJsonObject row = rootArray.at(i).toObject();
-        int currentRow = tableReg->rowCount();
-        tableReg->insertRow(currentRow);
+        tableReg->insertRow(i);
 
-        tableReg->setItem(currentRow, 0, new QTableWidgetItem(row["address"].toString()));
-        tableReg->setItem(currentRow, 1, new QTableWidgetItem(row["name"].toString()));
-        tableReg->setItem(currentRow, 2, new QTableWidgetItem(row["data"].toString()));
+        tableReg->setItem(i, 0, new QTableWidgetItem(row["address"].toString()));
+        tableReg->setItem(i, 1, new QTableWidgetItem(row["name"].toString()));
+        tableReg->setItem(i, 2, new QTableWidgetItem(row["data"].toString()));
     }
     tableReg->blockSignals(false);
     updateRegisters();
@@ -471,6 +415,7 @@ void MainWindow::btnAutoConnect_clicked()   // Перебор параметро
             for (auto db : dataBits){
                 for (auto sb : stopBits){
                     m_dtc->setSerialConnectionOptions(boxDevice->currentText(), baud, par, db, sb);
+                    m_dtc->changeToRtu();
                     m_dtc->setModbusEnabled();
                     if (m_dtc->isModbusEnabled()){
                         editResponse->append("Baudrate: " + QString::number(baud) + '\n' +
@@ -499,21 +444,6 @@ void MainWindow::btnDisconnect_clicked()
     else{
         editResponse->append("Нет активных соединений");
     }
-}
-
-void MainWindow::btnSetRtu_clicked() // Поменять формат сообщений с ASCII на RTU
-{
-    if (m_dtc->isModbusEnabled())
-        m_dtc->setModbusDisabled();
-    else if (m_dtc->isTcpEnabled())
-        m_dtc->setTcpDisabled();
-    m_dtc->setSerialConnectionOptions(boxDevice->currentText(),
-                                      static_cast<QSerialPort::BaudRate>(boxBaudRate->currentData().toInt()),
-                                      static_cast<QSerialPort::Parity>(boxParity->currentData().toInt()),
-                                      static_cast<QSerialPort::DataBits>(boxDataBits->currentData().toInt()),
-                                      static_cast<QSerialPort::StopBits>(boxStopBits->currentData().toInt()));
-    m_dtc->slaveID = editAddr->text().toUShort();
-    m_dtc->changeToRtu();
 }
 
 void MainWindow::updateUi(const QString &str)   // Вывести что-нибудь в терминал

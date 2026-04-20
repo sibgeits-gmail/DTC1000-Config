@@ -41,8 +41,6 @@ private:
     QPushButton* btnConnect;
     QPushButton* btnAutoConnect;
     QPushButton* btnDisconnect;
-    QPushButton* btnSetRTU;
-    QPushButton* btnLoadDefault;
     QPushButton* btnLoadConfig;
     QPushButton* btnSaveConfig;
     QPushButton* btnAddRow;
@@ -89,7 +87,6 @@ private slots:
     void btnConnect_clicked();
     void btnAutoConnect_clicked();
     void btnDisconnect_clicked();
-    void btnSetRtu_clicked();
     void updateTable(const QString &addr, int val);
     void updateUi(const QString &str);    // Вызывается после получения сигнала о завершении чтения регистра
     void onConnectionModeChanged(int index);

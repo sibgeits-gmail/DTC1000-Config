@@ -16,7 +16,7 @@ public:
         nameEdit = new QLineEdit(this);
 
         // Можно добавить маску для ввода Hex адресов (например, 0x1000)
-        addrEdit->setPlaceholderText("1000");
+        addrEdit->setPlaceholderText("1000 / 102A bit6");
 
         layout->addRow("Адрес (Hex):", addrEdit);
         layout->addRow("Название:", nameEdit);

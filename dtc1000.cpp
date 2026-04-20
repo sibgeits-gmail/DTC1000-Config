@@ -34,7 +34,7 @@ void dtc1000::setModbusEnabled()
     if (!m_modbus_reply) return;
     QEventLoop loop;
     connect(m_modbus_reply, &QModbusReply::finished, &loop, &QEventLoop::quit);
-    QTimer::singleShot(200, &loop, &QEventLoop::quit);
+    QTimer::singleShot(100, &loop, &QEventLoop::quit);
     loop.exec();    // Дождаться ответа от устройства или таймаута
     if (m_modbus_reply->isFinished() && m_modbus_reply->error() == QModbusDevice::NoError) {
         m_tmr->start();
@@ -273,7 +273,7 @@ void dtc1000::changeToRtu() // Используем QSerialBus чтобы отп
     setSerialEnabled();
     QByteArray payload = QByteArray(":01061072000176\r\n"); // Записать 1 в регистр 0х1072
     m_serial->write(payload);
-    m_serial->waitForBytesWritten(200);
+    m_serial->waitForBytesWritten(100);
 
     QEventLoop loop;
     QTimer timer;
@@ -282,7 +282,7 @@ void dtc1000::changeToRtu() // Используем QSerialBus чтобы отп
     connect(m_serial, &QSerialPort::readyRead, &loop, &QEventLoop::quit);
     connect(&timer, &QTimer::timeout, &loop, &QEventLoop::quit);
 
-    timer.start(200);
+    timer.start(100);
     loop.exec();
 
     if (timer.isActive()){  // Если таймер ещё работает, значит уже пришёл ответ

@@ -15,6 +15,7 @@ qt_add_executable(DTC1000
     mainwindow.h
     dtc1000.h
     dtc1000.cpp
+    addregdialog.h
 
 )
 
